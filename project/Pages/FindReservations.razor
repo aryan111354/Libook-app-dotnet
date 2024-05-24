@@ -1,0 +1,100 @@
+﻿@page "/findreservations"
+@using project.Data
+@using project.Services
+@inject IReservationService ReservationService
+<h3>Find Reservation</h3>
+<div class="row">
+    <div class="col-4">
+        <input type="text" class="form-control" @bind="reservationCode" placeholder="Reserve Code">
+    </div>
+    <div class="col-4">
+        <input type="text" class="form-control" @bind="userId" placeholder="User ID">
+    </div>
+    <div class="col-4">
+        <button type="button" class="btn btn-outline-primary" @onclick="FindReservation" style="width:14em">Find Reservation</button>
+    </div>
+</div>
+<h5 sstyle="text-align:center">Reservation:</h5>
+<div class="row">
+    <div class="col-4">
+        <input type="text" class="form-control" id="changeid" placeholder="Book Name" disabled value="@bookName">
+    </div>
+    <div class="col-4">
+        <input type="text" class="form-control" id="changeid" placeholder="Author" disabled value="@author">
+    </div>
+    <div class="col-4">
+        <input type="text" class="form-control" id="changeid" placeholder="Date Till Available" disabled value="@dateAvailable">
+    </div>
+</div>
+<div class="row">
+    <div class="col-4">
+        <input type="text" class="form-control" id="changeid" placeholder="Status" disabled value="@status">
+    </div>
+</div>
+<div class="row">
+    <div class="col-4">
+        <button type="button" class="btn btn-outline-primary" @onclick="SaveFindReservation" style="width:14em">Save Reservation</button>
+    </div>
+</div>
+
+@code {
+    public string reservationCode;
+    public string userId;
+    public string bookName;
+    public string author;
+    public string dateAvailable;
+    public string status;
+    public string bookId;
+    public decimal cost;
+
+
+    // accessing the reservation data as asked by the user 
+    private async Task FindReservation()
+    {
+        if (!string.IsNullOrEmpty(reservationCode) && !string.IsNullOrEmpty(userId))
+        {
+            Reservation reservation = await ReservationService.GetReservationByCodeAndUserIdAsync(reservationCode, userId);
+            if (reservation != null)
+            {
+                bookName = reservation.BookName;
+                author = reservation.Author;
+                dateAvailable = reservation.DateTillAvailable.ToString("yyyy-MM-dd");
+                bookId = reservation.BookId;
+                cost = reservation.Cost;
+                status = "Found";
+            }
+            else
+            {
+                status = "Not Found";
+            }
+        }
+    }
+
+
+    // to save the reservation as per user request 
+    public async Task SaveFindReservation()
+    {
+        if (!string.IsNullOrEmpty(reservationCode) && !string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(status) && status == "Found")
+        {
+            Reservation reservation = new Reservation
+                {
+                    ReservationId = reservationCode,
+                    UserId = userId,
+                    BookId = bookId,
+                    ReserveDate = DateTime.Now,
+                    DateTillAvailable = DateTime.Parse(dateAvailable),
+                    Cost = cost
+                };
+
+            bool isUpdated = await ReservationService.UpdateReservationAsync(reservation);
+            if (isUpdated)
+            {
+                status = "Saved";
+            }
+            else
+            {
+                status = "Save Failed";
+            }
+        }
+    }
+}

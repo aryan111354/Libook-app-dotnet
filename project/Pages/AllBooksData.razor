@@ -1,0 +1,44 @@
+﻿@page "/allbooksdata"
+@using project.Data
+@using project.Services
+@inject IBookService BookService
+
+
+ 
+<h3>All Books Data</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Book ID</th>
+            <th>Book Name</th>
+            <th>Author</th>
+            <th>IFSC Code</th>
+            <th>Days to Read</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var book in books)
+        {
+            <tr>
+                <td>@book.BookId</td>
+                <td>@book.BookName</td>
+                <td>@book.BookAuthor</td>
+                <td>@book.IFSCcode</td>
+                <td>@book.DaysToRead</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+@code {
+    // creating books list 
+    private List<Books> books = new List<Books>();
+
+    // filling the books list with data accessed from books table in database
+    protected override async Task OnInitializedAsync()
+    {
+        books = await BookService.GetAllBooksAsync();
+    }
+}

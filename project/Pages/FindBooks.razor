@@ -1,0 +1,212 @@
+﻿@page "/findBooks"
+@using project.Data
+@using project.Services
+@inject IBookService BookService
+@inject IReservationService ReservationService
+<h3>Find Book Page</h3>
+<div class="row g-2">
+	<div class="col-6">Select Letter</div>
+	<div class="col-6">Books</div>
+</div>
+<div class="row g-2">
+	<div class="col-6">
+		<select @onchange="ShowAlphabet" class="form-select" aria-label="Default select example">
+			<option>Select</option>
+			@for (char c = 'A'; c <= 'Z'; c++)
+			{
+				<option value="@c">@c</option>
+			}
+		</select>
+
+	</div>
+	<div class="col-6">
+        <select @onchange="SelectBook" class="form-select" aria-label="Default select example">
+            <option>Select</option>
+            @foreach (var book in _filteredBooks)
+            {
+                <option value="@book.BookId">@book.BookName</option>
+            }
+        </select>
+	</div>
+</div>
+<div class="row g-1">
+	<button type="button" class="btn btn-outline-primary" @onclick="FetchDataOfBooks" style="width:14em">Select Book</button>
+</div>
+
+<h4 style="text-align:center">Book Details</h4>
+
+<div class="row">
+	<div class="col-4">
+		<input type="text" class="form-control" id="books" placeholder="Book Name" disabled value="@_name">
+	</div>
+	<div class="col-4">
+		<input type="text" class="form-control" id="books" placeholder="IFSC code" disabled value="@_ifscCode">
+	</div>
+	<div class="col-4">
+		<input type="text" class="form-control" id="books" placeholder="Book ID" disabled value="@_bookId">
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-6">
+		<input type="text" class="form-control" id="books" placeholder="BookAuthor" disabled value="@_bookAuthor">
+	</div>
+	<div class="col-6">
+		<input type="text" class="form-control" id="books" placeholder="TimeAvailable" disabled value="@_daysToRead">
+	</div>
+</div>
+<h4 style="text-align:center">Reserve</h4>
+<div class="row">
+    <div class="col-4">
+        <input type="text" class="form-control" id="books" placeholder="Name" @bind="_name">
+    </div>
+    <div class="col-4">
+        <input type="text" class="form-control" id="flights" placeholder="UserId" @bind="_userId">
+    </div>
+    <div class="col-4">
+        <input type="text" class="form-control" id="flights" placeholder="ReserveDate" @bind="_reserveDate">
+    </div>
+</div>
+<div class="row g-1">
+	<button type="button" class="btn btn-outline-primary" @onclick="ReserveBook" style="width:14em">Reserve</button>
+</div>
+<div class="row">
+	<div class="col-12">
+		<p class="text-danger">@_errorMessage</p>
+	</div>
+</div>
+<h6 style="text-align:center">Reservation Details</h6>
+<div class="row">
+	<div class="col-4">
+		<input type="text" class="form-control" id="books" placeholder="ReservationID" disabled value="@_reservationId">
+	</div>
+	<div class="col-4">
+		<input type="text" class="form-control" id="books" placeholder="DatetillAvailable" disabled value="@_dateTillAvailable">
+	</div>
+	<div class="col-4">
+		<input type="text" class="form-control" id="books" placeholder="Cost" disabled value="@_cost">
+	</div>
+</div>
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+   
+       
+            <div class="alert alert-danger">
+                <strong>Error:</strong> @errorMessage
+            </div>
+        
+}
+@code {
+
+    // initializing required attributes 
+    private List<Books> _books = new List<Books>();
+    private List<Books> _filteredBooks = new List<Books>();
+    private Books _selectedBook;
+    private string _name;
+    private string _userId;
+    private string _reserveDate;
+    private string _reservationId;
+    private string _dateTillAvailable;
+    private string _cost;
+    private string _ifscCode;
+    private string _bookAuthor;
+    private string _bookId;
+    private int _daysToRead;
+    private string _errorMessage;
+    string errorMessage;
+
+
+    // filling the list from data in database
+    protected override async Task OnInitializedAsync()
+    {
+
+        // exeption to check if  its connected to database 
+        try
+        {
+            bool isConnected = await BookService.TestConnectionAsync(); // or ReservationService
+            if (isConnected)
+            {
+                Console.WriteLine("Connected to the database successfully.");
+                _books = await BookService.GetAllBooksAsync();
+            }
+            else
+            {
+                Console.WriteLine("Failed to connect to the database.");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+    // method to fill list with books having innitial which is selected by the user 
+    private void ShowAlphabet(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "Select")
+        {
+            char selectedLetter = e.Value.ToString()[0];
+            _filteredBooks = _books.Where(b => b.BookName[0] == selectedLetter).ToList();
+
+        }
+        else
+        {
+            _filteredBooks.Clear();
+        }
+    }
+    // entering selected books into the list 
+    private void SelectBook(ChangeEventArgs e)
+    {
+        var bookId = e.Value.ToString();
+        _selectedBook = _filteredBooks.FirstOrDefault(b => b.BookId == bookId);
+    }
+
+    // showing the detailed of selected book
+    private void ShowBooks(ChangeEventArgs e)
+    {
+        var bookId = e.Value.ToString();
+        _selectedBook = _books.FirstOrDefault(b => b.BookId == bookId);
+
+    }
+
+
+    // fetching the data of selected book
+    private void FetchDataOfBooks()
+    {
+        if (_selectedBook != null)
+        {
+            _bookId = _selectedBook.BookId;
+            _name = _selectedBook.BookName;
+            _bookAuthor = _selectedBook.BookAuthor;
+            _ifscCode = _selectedBook.IFSCcode;
+            _daysToRead = _selectedBook.DaysToRead;
+        }
+    }
+
+
+    // mehtod to server selectd books after entering user ID
+    private async Task ReserveBook()
+    {
+        // exception to display correct format if entered wrong 
+        try{
+        DateTime reserveDateParsed;
+        if (DateTime.TryParse(_reserveDate, out reserveDateParsed))
+        {
+            var reservation = await ReservationService.ReserveBookAsync(_userId, _selectedBook.BookId, reserveDateParsed);
+            _reservationId = reservation.ReservationId;
+            _dateTillAvailable = reservation.DateTillAvailable.ToString("yyyy-MM-dd");
+            _cost = reservation.Cost.ToString("F2");
+        }
+        else
+        {
+            _errorMessage = "Invalid date format. Please use the format 'yyyy-MM-dd'.";
+        }
+    }
+      
+    catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+
+}
